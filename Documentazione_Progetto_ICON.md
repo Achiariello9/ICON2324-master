@@ -179,3 +179,6 @@ In sintesi, non esiste uno stimatore migliore in assoluto; la scelta dipende dal
 
 // Immagine
 
+## Conclusione
+
+Per future estensioni del progetto, sarebbe interessante esplorare ulteriori metodi di apprendimento automatico per migliorare la precisione e la generalizzazione del sistema. Inoltre, potrebbe essere utile considerare una maggiore varietà di dati di test e valutare l'impatto delle dimensioni del dataset di training sulla performance del sistema. Infine, potrebbero essere esplorate altre tecniche di inferenza e apprendimento per ottimizzare ulteriormente la diagnosi del virus di fantasia.
