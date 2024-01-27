@@ -73,3 +73,109 @@ Questa regola viene attivata quando i fatti nella parte sinistra (LHS) sono valu
 
 Se il sintomo "nausea" è stato identificato come True nella regola precedente, questa regola successiva viene attivata per determinare se l'utente sta vivendo attacchi di vomito.
 
+## Rete Bayesiana
+
+Abbiamo adottato un approccio basato su reti bayesiane, che sono grafi aciclici direzionati in cui ogni caratteristica è rappresentata come un nodo e le dipendenze tra le caratteristiche sono indicate tramite archi direzionati. Questo modello ci consente di stabilire che l'attivazione di una caratteristica dipende dall'attivazione di una o più altre caratteristiche, che chiamiamo genitori. Per fare ciò, stabiliamo un ordine tra le caratteristiche.
+
+Le reti bayesiane sfruttano le probabilità e il teorema di Bayes per calcolare la probabilità di un evento specifico in base ad altri eventi (probabilità condizionata). In una rete bayesiana, ogni nodo con genitori ha una probabilità condizionata 𝑃(𝑛𝑜𝑑𝑒|𝑝𝑎𝑟𝑒𝑛𝑡𝑠(𝑛𝑜𝑑𝑒)) dove 𝑝𝑎𝑟𝑒𝑛𝑡𝑠(𝑛𝑜𝑑𝑒) restituisce i nodi genitore del nodo. Di conseguenza, ogni nodo ha una tabella delle probabilità condizionate rispetto ai suoi genitori. Utilizziamo la formula generale per calcolare le probabilità di ogni nodo.
+
+$$𝑃(𝑋_1,𝑋_2, … , 𝑋_n
+) = ∏^{n}_{i=1}𝑃(𝑋_1
+|𝑋_1, … , 𝑋_{𝑛−1}) $$
+
+dove $X_i$ sono le feature/nodi della rete bayesiana.
+
+Ad esempio  , abbiamo nodi come "Malattia", "Perdita di peso" e "Cisti", con archi che partono da "Malattia" e arrivano agli ultimi due nodi. La "Ciste" dipende anche dalla presenza della "Malattia", ma non c'è un collegamento diretto tra "Ciste" e "Perdita di peso", quindi queste due feauture sono indipendenti.
+
+Abbiamo la flessibilità di espandere il modello includendo fattori di rischio per la malattia, come una dieta squilibrata o un ambiente malsano, per indicare possibili cause. Questo ci permette di migliorare l'accuratezza e l'efficacia del modello diagnostico.
+
+Dopo aver costruito la rete bayesiana con la sua struttura e le tabelle per la probabilità condizionata, possiamo inferire la probabilità di eventi specifici osservando altri eventi. L'inferenza può essere esatta o approssimata. Nell'inferenza esatta, enumeriamo i mondi coerenti con le osservazioni e utilizziamo algoritmi come l'eliminazione di variabili per calcolare la probabilità esatta dell'evento. Nell'inferenza approssimata, stimiamo la probabilità di un evento.
+
+Se non conosciamo a priori le tabelle delle probabilità condizionate degli eventi, possiamo derivarle analizzando i dati e utilizzando algoritmi come stimatori della massima verosimiglianza o stimatori di Bayes. Questi ultimi combinano la credenza precedente con i dati osservati per ottenere probabilità a posteriori. Possiamo anche utilizzare metodi come le regressioni o gli alberi decisionali per stimare le probabilità condizionate dei nodi in una DAG.
+
+### Implementazione
+
+Sfruttando il fatto che stiamo lavorando con una malattia di fantasia abbiamo la libertà di
+poter sperimentare con una rete bayesiana con una struttura e delle tabelle date. Per prima 
+cosa abbiamo la struttura della rete bayesiana così descritta:
+
+// Immagine
+
+Il grafo mostra chiaramente quali sono i sintomi della malattia, qual è la causa dei sintomi e 
+anche delle variabili intermedie che a loro volta causano dei sintomi.
+Per implementare la rete bayesiana in Python abbiamo fatto uso di bnlearn, una libreria
+che fa da wrapper ad un’altra libreria pgmpy che è il vero cuore pulsante. 
+bnlearn ci permette di creare una DAG, creare ed assegnare delle tabelle di probabilità 
+condizionata per singolo nodo (con la classe TabularCPD) e poi di inferire le probabilità per 
+un nodo della DAG andando a segnalare le osservazioni (ossia quali sintomi l’utente riporta 
+al sistema), tramite il metodo della eliminazione delle variabili.
+Inoltre, bnlearn permette di imparare anche le tabelle delle probabilità andando a stimare
+da un dataset che gli forniamo in input. In questo caso ci permette di scegliere due opzioni: 
+stimatore di massima verosimiglianza e stimatore di Bayes BDeu (ossia la credenza 
+precedente è costruita usando una distribuzione uniforme di Dirichlet e andando a 
+confrontarla con i dati osservati normalizzati con dei pseudoconteggi).
+Infine, ci permette di apprendere anche la struttura usando diversi metodi di ricerca (come 
+la ricerca esaustiva, la ricerca Hillclimb, Chow-liu, etc.) che invece noi non useremo.
+La prima cosa che dobbiamo fare (avendo una struttura data) è la creazione della DAG, per 
+far ciò andiamo a creare un vettore di coppie, dove ogni coppia è formata da due nodi del 
+grafo che vanno ad indicare un arco che li collega.
+Come secondo punto (se stiamo lavorando con la distribuzione di probabilità data) andiamo 
+a creare e ad assegnare le tabelle delle probabilità: ogni tabella e associata ad un nodo 
+che andiamo ad esplicitare; andiamo anche ad esplicitare le evidenze per quel nodo (se il 
+nodo ha genitori), e poi a dichiarare i possibili stati del nodo (nel nostro caso sono 2: 
+presente, non presente) e infine a inserire le tabelle delle probabilità vere e proprie. La tabella 
+ha come righe gli stati del nodo preso in esame e come colonne le combinazioni degli stati 
+dei nodi genitori; così andiamo ad assegnare per ogni cella della tabella la probabilità che il 
+nodo si trovi in un determinato stato dato la combinazione degli stati dei genitori. La somma 
+degli elementi di una colonna deve essere uguale ad 1. Una volta creata una tabella per ogni 
+nodo le andiamo ad assegnare alla DAG.
+Arrivati a questo punto avremo una rete bayesiana funzionante, quello che ci rimane da fare
+è prendere le osservazioni del paziente (i sintomi che dichiara di avere) ed inferire la 
+probabilità che il paziente abbia la malattia conoscendo lo stato dei sintomi. Per far ciò 
+chiediamo (attraverso delle domande) i sintomi che il paziente ha; ad ogni sintomo osservato 
+gli assegniamo il valore 0 se non è presente e 1 se invece è presente. Dopodiché andiamo 
+ad usare la funzione di inferenza di bnlearn che va ad usare l’eliminazione di variabili per 
+ottenere la probabilità della malattia, che andiamo poi a mostrare all’utente insieme ad un 
+avvertimento se la malattia ha una probabilità maggiore o uguale al 50%.
+Altrimenti come alternativa, se non abbiamo le tabelle di probabilità per ogni nodo, 
+possiamo apprendere le probabilità usando diversi stimatori (descritti precedentemente).
+Semplicemente diamo una DAG in input combinata con un dataset: ogni riga del dataset 
+rappresenta un paziente osservato e testato per la malattia a cui associamo i vari sintomi 
+che possiede. Una volta passati questi input decidiamo il tipo di stimatore da usare (nel 
+nostro programma lasciamo la libertà all’utente) e così otteniamo nuovamente una rete 
+bayesiana funzionante ma questa volta le probabilità sono apprese e non date. Questa è 
+sicuramente una situazione più realistica del primo caso, in quanto è impossibile sapere a 
+priori quali sono le probabilità che una malattia abbia un certo sintomo. Nella realtà ciò ci è 
+sconosciuto e tutto quello che abbiamo, non sono altro che osservazioni parziali della realtà.
+
+### Valutazione
+
+Potremmo interrogarci sulle differenze tra i due metodi di stima delle probabilità e chiederci se uno dei due sia superiore. Nella realtà, raramente ci troviamo di fronte a malattie con probabilità note; più spesso dobbiamo interpretare osservazioni parziali e conoscere i pro e i contro dei due metodi di stima delle probabilità è cruciale per medici e pazienti che potrebbero utilizzare strumenti simili.
+
+Per rispondere a questa domanda, abbiamo eseguito numerose simulazioni sui dati a nostra disposizione, dividendoli in due set: uno per l'addestramento del modello e l'altro per il test. Abbiamo notato che lo stimatore di verosimiglianza sembra generalmente più accurato e preciso rispetto a quello di Bayes, anche se quest'ultimo ha un richiamo maggiore. In altre parole, lo stimatore di verosimiglianza è più affidabile quando identifica un positivo, mentre quello di Bayes è più propenso a individuare positivi, a costo di aumentare i falsi positivi.
+
+// Immagine
+
+Tuttavia, il punteggio F1, che combina precisione e richiamo, è migliore in due casi su tre per lo stimatore di verosimiglianza. È importante notare che entrambi gli stimatori hanno vantaggi e svantaggi, e la scelta dipende dal contesto specifico. Ad esempio, in caso di malattie gravi come il cancro, potrebbe essere preferibile un maggior richiamo anche a costo di più falsi positivi. Al contrario, in situazioni in cui una diagnosi errata è costosa, la precisione potrebbe essere prioritaria.
+
+// Immagine
+
+L'overfitting è un problema da considerare, specialmente quando i dati di addestramento non rappresentano accuratamente la realtà. In tali casi, lo stimatore di Bayes potrebbe essere preferibile poiché si adatta meno ai dati di addestramento.
+
+Come secondo caso di test invece andiamo a testare qual è la quantità ottimale di dati da 
+fornire al sistema nella fase di training, in questa fase del test andiamo quindi a variare la 
+dimensione del dataset di training ma manteniamo costante il dataset di test.
+Cercheremo, quindi, di capire qual è la quantità sufficiente di dati da fornire al modello per 
+ottenere dei risultati accettabili (questo test è molto utile soprattutto quando non si hanno 
+molti dati su cui basare l’addestramento).
+Quindi eseguiamo 5 test con dataset di training di dimensione uguale a: 1.000, 5.000, 10.000, 
+25.000, 50.000. Mandando in esecuzione i 5 test per modello, otteniamo i seguenti dati:
+
+// Immagine
+
+La dimensione limitata dei test è un altro problema, limitando la significatività statistica dei risultati. Inoltre, abbiamo esaminato la quantità ottimale di dati per l'addestramento, notando che 10.000 elementi sembrano sufficienti per lo stimatore di verosimiglianza, mentre per quello di Bayes, l'aumento dei dati potrebbe migliorare la precisione senza influenzare il richiamo in modo significativo.
+
+In sintesi, non esiste uno stimatore migliore in assoluto; la scelta dipende dal contesto e dalla disponibilità dei dati. In basso sono riportare le matrici di confusione:
+
+// Immagine
+
