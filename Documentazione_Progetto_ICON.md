@@ -49,3 +49,27 @@ Analogamente, la presenza di ulcere viene identificata in base alle risposte del
 
 Un sistema esperto è un'applicazione di intelligenza artificiale che si impegna nella risoluzione di problemi, cercando di emulare i comportamenti di esperti in un determinato campo di attività. La sua struttura fondamentale include una knowledge base che rappresenta e conserva informazioni e regole riguardanti il dominio in questione. L'inference engine è responsabile dell'applicazione pratica delle nozioni acquisite dalla base di conoscenza, mentre l'interfaccia utente facilita l'interazione tra il sistema e l'utente.
 
+## Implementazione del sistema esperto
+
+Abbiamo sviluppato un sistema esperto in Python utilizzando la libreria Experta. Questo sistema si basa su regole che associano fatti accaduti a condizioni (LHS) e azioni (RHS). Ad esempio, per ogni sintomo, abbiamo definito una regola che chiede all'utente se riscontra quel sintomo e aggiorna il fatto corrispondente di conseguenza.
+
+Il sistema analizza i sintomi dell'utente e, in base alle risposte, attiva altre regole correlate ai sintomi. A seconda dei sintomi attivati, vengono considerate regole aggiuntive relative a condizioni più complesse come ulcere, cisti e vomito. Alla fine, il sistema applica una regola finale che comunica la diagnosi basata sui sintomi dell'utente.
+
+Inizialmente, il sistema chiede all'utente dei sintomi di base. Se l'utente presenta almeno uno dei sintomi basilari, come perdita di peso o diarrea, il sistema procede nell'analisi per determinare la forma della malattia. Se l'utente mostra sintomi della forma lieve del virus, come nausea e eventualmente vomito, il sistema cerca di confermare la presenza di cisti.
+
+Se l'utente mostra tutti i sintomi della forma lieve, riceverà una diagnosi positiva. Se manca un sintomo tra cisti e vomito, il sistema esamina la possibilità che l'utente sia affetto dal secondo stadio della malattia. In questo caso, il sistema cerca di determinare la presenza di ulcere, considerando sintomi come dolore addominale, acidità di stomaco e nausea. Se l'utente presenta tutti e tre questi sintomi, il sistema conclude che l'utente ha contratto la forma grave del virus.
+
+**Esempi tratti dal codice**
+
+// Immagine
+
+Questa regola è responsabile di comunicare la diagnosi all'utente quando il sistema ha determinato che l'utente ha contratto la forma lieve della malattia. Nella parte sinistra della regola (LHS), le condizioni necessarie per l'applicazione della regola sono che i fatti relativi ai sintomi di base, al vomito e alle cisti siano tutti impostati a True. Nella parte destra della regola (RHS), il sistema si occupa di comunicare la diagnosi all'utente attraverso stampe o messaggi appropriati.
+
+// Immagine
+
+Questa regola viene attivata quando i fatti nella parte sinistra (LHS) sono valutati come True. Una volta attivata, il sistema porrà una domanda all'utente e, in base alla risposta, imposterà il fatto relativo al sintomo come True o False.
+
+// Immagine
+
+Se il sintomo "nausea" è stato identificato come True nella regola precedente, questa regola successiva viene attivata per determinare se l'utente sta vivendo attacchi di vomito.
+
